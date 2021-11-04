@@ -1,0 +1,3 @@
+#!/usr/bin/sh
+executable="$(dirname $0)/../src/cli.py"
+python3 $executable $@

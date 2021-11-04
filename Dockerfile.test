@@ -1,0 +1,18 @@
+FROM python:alpine
+
+# Inspiration: https://github.com/alpine-docker/git/blob/master/Dockerfile
+RUN apk fix
+RUN apk --update add git less openssh && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm /var/cache/apk/* && \
+    git config --global --add "tags1.tag1" "not-a-repo" && \
+    pip install inquirerpy
+
+COPY . /git-repotag
+RUN chmod +x /git-repotag/bin/git-repotag
+ENV PATH="/git-repotag/bin:${PATH}"
+ENV GITCONFIG_PATH="/root/.gitconfig"
+ENV GIT_REPOTAG_GITCONFIG_TAG_SECTION="tags1"
+
+WORKDIR /git-repotag/test
+CMD [ "python3", "test.py" ]
