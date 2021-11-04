@@ -4,14 +4,51 @@ from os import getcwd
 from subprocess import run, PIPE
 import sys
 import os
-from pathlib import Path
+import logging
+from pathlib import Path, PurePosixPath
 from pprint import pprint
 from InquirerPy import inquirer
-from InquirerPy.base.control import Choice
+from InquirerPy.base import Choice
 
 
 GITCONFIG_TAG_SECTION_DEFAULT = 'tag'
 GITCONFIG_TAG_SECTION_ENV_VARIABLE = 'GITCONFIG_TAG_SECTION'
+
+
+# Inspiration: https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
+class LogFormatter(logging.Formatter):
+
+    grey = "\x1b[38;21m"
+    yellow = "\x1b[33;21m"
+    red = "\x1b[31;21m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    format = "%(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: grey + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+logger = logging.getLogger(PurePosixPath(__file__).name)
+logger.setLevel(logging.WARNING)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.WARNING)
+ch.setFormatter(LogFormatter())
+logger.addHandler(ch)
+
+def set_logging_level(level):
+    ch.setLevel(level)
+    logger.setLevel(level)
 
 def path_exists(p):
     return p.expanduser().exists()
@@ -24,8 +61,8 @@ def get_gitconfig_tag_section():
     gitconfig_tag_section_env = os.environ.get(GITCONFIG_TAG_SECTION_ENV_VARIABLE)
     return gitconfig_tag_section_env if gitconfig_tag_section_env is not None else GITCONFIG_TAG_SECTION_DEFAULT
 
-# TODO verbose commands
 def run_command(command, *, should_redirect_to_stdout=False, check=False):
+    logger.info(f'Running command: "{command}" - {"exit" if check  else "continue"} on failure')
     stdout = sys.stdout if should_redirect_to_stdout else PIPE
     completed_process = run(command, shell=True, stdout=stdout, check=check)
     process_output = None if should_redirect_to_stdout else completed_process.stdout.decode('utf-8')
@@ -49,6 +86,7 @@ def gitconfig_add(tags, tag, repo_path):
         check=True
     )
 def gitconfig_parse_tags(*, should_print_repos=True):
+    logger.info('Parsing tags from global .gitconfig')
     _, command_output = run_command(
         'git config --list',
         check=True
@@ -61,12 +99,11 @@ def gitconfig_parse_tags(*, should_print_repos=True):
         tag_dict.setdefault(tag, []).append(repo)
     return tag_dict
     
-
-def git_config_is_tagged(tag, repo_path):
-    pass
-
 def get_args():
     parser = ArgumentParser()
+    verbosity_group = parser.add_mutually_exclusive_group()
+    verbosity_group .add_argument('-v', action='store_const', dest='log_level', const=logging.INFO)
+    verbosity_group .add_argument('-q', action='store_const', dest='log_level', const=logging.ERROR)
     subparsers = parser.add_subparsers(title='commands', dest='command', required=True)
     parser_add = subparsers.add_parser('add')
     parser_add.add_argument('tag', help='Gitconfig tag')
@@ -91,6 +128,7 @@ def validate_tag(tag):
         return f'Tag "{tag}" contains invalid - non-alphabetic characters'
 
 def add(tags ,tag, repo_path):
+    logger.info('Running "add" command')
     validation_err = validate_path(repo_path)
     if validation_err is not None:
         raise Exception(validation_err)
@@ -103,54 +141,71 @@ def remove(tags, tag, repo_path):
     gitconfig_remove(tags, tag, repo_path)
 
 def interactive(tags, repo_path):
+    logger.info('Running "interactive" command')
+    # Value has to be stringified, otherwise list lookup fails
+    str_repo_path = str(repo_path)
     validation_err = validate_path(repo_path)
     if validation_err is not None:
         raise Exception(validation_err)
-    user_existing_tags = inquirer.checkbox(
+    modified_existing_tags = inquirer.checkbox(
         message='Select tags:',
-        choices=[ tag for tag in tags.keys() ],
+        choices=[ Choice(tag, enabled=str_repo_path in repos) for tag,repos in tags.items() ],
         cycle=True,
     ).execute()
     should_add_new_tags = inquirer.confirm(message="Do you want to add extra tags?", default=False).execute()
-    user_new_tags = [tag.strip() for tag in inquirer.text(
+    completely_new_tags = [tag.strip() for tag in inquirer.text(
         message='Enter tags (comma separated):',
         ).execute().split() ] if should_add_new_tags else []
-    tags_to_add = set(user_existing_tags) | set(user_new_tags)
+    modified_existing_tags = set(modified_existing_tags)
+    previous_existing_tags = set([tag for tag,repos in tags.items() if str_repo_path in repos])
+    completely_new_tags = set(completely_new_tags)
+    tags_defined_twice = (modified_existing_tags - previous_existing_tags) & completely_new_tags
+    for tag in tags_defined_twice:
+        logger.warning(f'Tag "{tag}" was defined on both inputs')
+    tags_to_add = (modified_existing_tags - previous_existing_tags) | completely_new_tags
+    tags_to_remove = previous_existing_tags - modified_existing_tags
+    if not tags_to_add:
+        logger.warning(f'No repository tags were added')
+    for tag in tags_to_remove:
+        logger.info(f'Removing tag "{tag}"')
+        gitconfig_remove(tags, tag, repo_path)
     for tag in tags_to_add:
+        logger.info(f'Adding tag "{tag}"')
         gitconfig_add(tags, tag, repo_path)
-    # TODO add warning when no tags have been added
-    # TODO add warning when tag is added on two places
+
 
 def list(tags, *, should_print_repos=False):
+    logger.info('Running "list" command')
     if should_print_repos:
         pprint(tags)
     else:
         print('\n'.join(tags.keys()))
 
 def main():
-    args = get_args()
-    tags = gitconfig_parse_tags()
-    if args.command == 'list':
-        list(tags)
-        return
-    path = Path(args.path if args.path is not None else getcwd())
-    path = path.expanduser().resolve()
-    if args.command == 'add':
-        add(tags, args.tag, path)
-    elif args.command == 'remove':
-        remove(tags, args.tag, path)
-    elif args.command == 'interactive':
-        interactive(tags, path)
-    else:
-        raise Exception(f'Unknown command "{args.command}"')
+    try:
+        args = get_args()
+        if args.log_level is not None:
+            set_logging_level(args.log_level)
+        logger.info('Running in verbose mode')
+        tags = gitconfig_parse_tags()
+        if args.command == 'list':
+            list(tags)
+            return
+        path = Path(args.path if args.path is not None else getcwd())
+        path = path.expanduser().resolve()
+        if args.command == 'add':
+            add(tags, args.tag, path)
+        elif args.command == 'remove':
+            remove(tags, args.tag, path)
+        elif args.command == 'interactive':
+            interactive(tags, path)
+        else:
+            raise Exception(f'Unknown command "{args.command}"')
+    except Exception as e:
+        logger.error(e)
+        exit(1)
 
 main()
 
-# TODO colored output
-# TODO verbose mode
-# TODO error handling
-
 # TODO test when .gitconfig is empty
-# TODO unit test
-
-# TODO config
+# TODO write unit test in a container, where git is installed
