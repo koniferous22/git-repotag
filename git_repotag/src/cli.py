@@ -7,9 +7,7 @@ from pprint import pprint
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
 
-from .git_sdk import gitconfig_add,gitconfig_remove, gitconfig_parse_repotags
-from .logger import get_logger, set_logging_level
-from .config import GIT_DIR
+from . import GIT_DIR, set_logging_level, get_logger, gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
 
 def path_exists(p):
     return p.expanduser().exists()
@@ -183,16 +181,3 @@ def cli(args):
         raise Exception(f'Unknown command "{args.command}"')
     return cli_result
 
-
-def main():
-    try:
-        parser = get_arg_parser()
-        cli_result = cli(parser.parse_args())
-        exit(cli_result)
-    except Exception as e:
-        # traceback.print_exc(file=sys.stdout)
-        get_logger().error(e)
-        exit(1)
-
-if __name__ == '__main__':
-    main()
