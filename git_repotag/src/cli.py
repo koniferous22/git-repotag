@@ -18,7 +18,7 @@ def is_git_repo(directory):
     git_dir = directory / GIT_DIR
     return git_dir.exists()
 
-def get_args():
+def get_arg_parser():
     parser = ArgumentParser()
     verbosity_group = parser.add_mutually_exclusive_group()
     verbosity_group .add_argument('-v', action='store_const', dest='log_level', const=logging.INFO)
@@ -41,7 +41,7 @@ def get_args():
     subparsers.add_parser('validate', help="Checks for invalid paths in gitconfig")
     parser_cleanup = subparsers.add_parser('cleanup', help="Cleanup of invalid paths in gitconfig")
     parser_cleanup.add_argument('-y', help='Assume yes for prompts', dest='assume_yes', action='store_true')
-    return parser.parse_args()
+    return parser
 
 def validate_path(path):
     if not path_exists(path):
@@ -152,40 +152,47 @@ def get_path_from_args(args):
     path = Path(args.path if args.path is not None else getcwd())
     return path.expanduser().resolve()
 
+def cli(args):
+    if args.log_level is not None:
+        set_logging_level(args.log_level)
+    get_logger().info('Running in verbose mode')
+    repotags = gitconfig_parse_repotags()
+    cli_result = 0
+    if args.command == 'list':
+        if args.list_subcommand == 'tags':
+            list_tags(repotags, should_pprint=args.pprint)
+        elif args.list_subcommand == 'repos':
+            list_repos(repotags, should_pprint=args.pprint)
+        else:
+            raise Exception(f'Unknown subcommand "{args.command} {args.list_subcommand}"')
+    elif args.command == 'add':
+        path = get_path_from_args(args)
+        add(repotags, args.tag, path)
+    elif args.command == 'remove':
+        path = get_path_from_args(args)
+        remove(repotags, args.tag, path)
+    elif args.command == 'interactive':
+        path = get_path_from_args(args)
+        interactive(repotags, path)
+    elif args.command == 'validate':
+        # Apply exit code from the result
+        cli_result = validate(repotags)
+    elif args.command == 'cleanup':
+        cleanup(repotags, args.assume_yes)
+    else:
+        raise Exception(f'Unknown command "{args.command}"')
+    return cli_result
+
 
 def main():
     try:
-        args = get_args()
-        if args.log_level is not None:
-            set_logging_level(args.log_level)
-        get_logger().info('Running in verbose mode')
-        repotags = gitconfig_parse_repotags()
-        if args.command == 'list':
-            if args.list_subcommand == 'tags':
-                list_tags(repotags, should_pprint=args.pprint)
-            elif args.list_subcommand == 'repos':
-                list_repos(repotags, should_pprint=args.pprint)
-            else:
-                raise Exception(f'Unknown subcommand "{args.command} {args.list_subcommand}"')
-        elif args.command == 'add':
-            path = get_path_from_args(args)
-            add(repotags, args.tag, path)
-        elif args.command == 'remove':
-            path = get_path_from_args(args)
-            remove(repotags, args.tag, path)
-        elif args.command == 'interactive':
-            path = get_path_from_args(args)
-            interactive(repotags, path)
-        elif args.command == 'validate':
-            # Apply exit code from the result
-            exit(validate(repotags))
-        elif args.command == 'cleanup':
-            cleanup(repotags, args.assume_yes)
-        else:
-            raise Exception(f'Unknown command "{args.command}"')
+        parser = get_arg_parser()
+        cli_result = cli(parser.parse_args())
+        exit(cli_result)
     except Exception as e:
         # traceback.print_exc(file=sys.stdout)
         get_logger().error(e)
         exit(1)
 
-main()
+if __name__ == '__main__':
+    main()

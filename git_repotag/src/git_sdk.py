@@ -1,7 +1,6 @@
 import sys
 import os
 from subprocess import PIPE, run
-from pprint import pprint
 from .config import GITCONFIG_TAG_SECTION_DEFAULT, GITCONFIG_TAG_SECTION_ENV_VARIABLE
 from .logger import get_logger
 

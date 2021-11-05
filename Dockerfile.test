@@ -5,7 +5,6 @@ RUN apk fix
 RUN apk --update add git less openssh && \
     rm -rf /var/lib/apt/lists/* && \
     rm /var/cache/apk/* && \
-    git config --global --add "tags1.tag1" "not-a-repo" && \
     pip install inquirerpy
 
 COPY . /git-repotag

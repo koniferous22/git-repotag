@@ -14,3 +14,4 @@ make test-run
 # TODO
 
 * add option to parse from other than global `.gitconfig`
+* refactor tests into volume
