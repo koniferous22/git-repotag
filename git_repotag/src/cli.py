@@ -6,9 +6,10 @@ from pathlib import Path
 from pprint import pprint
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
-from git_sdk import gitconfig_add,gitconfig_remove, gitconfig_parse_repotags
-from logger import get_logger, set_logging_level
-from config import GIT_DIR
+
+from .git_sdk import gitconfig_add,gitconfig_remove, gitconfig_parse_repotags
+from .logger import get_logger, set_logging_level
+from .config import GIT_DIR
 
 def path_exists(p):
     return p.expanduser().exists()
@@ -188,5 +189,3 @@ def main():
         exit(1)
 
 main()
-
-# TODO unit test

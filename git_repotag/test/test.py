@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 import unittest
 import os
+import sys
+from git_repotag.src.git_sdk import gitconfig_parse_repotags
+
+print(gitconfig_parse_repotags())
 
 class TestStringMethods(unittest.TestCase):
 

@@ -1,9 +1,9 @@
 import sys
 import os
 from subprocess import PIPE, run
-from config import GITCONFIG_TAG_SECTION_DEFAULT, GITCONFIG_TAG_SECTION_ENV_VARIABLE
-from logger import get_logger
 from pprint import pprint
+from .config import GITCONFIG_TAG_SECTION_DEFAULT, GITCONFIG_TAG_SECTION_ENV_VARIABLE
+from .logger import get_logger
 
 def get_gitconfig_tag_section():
     gitconfig_tag_section_env = os.environ.get(GITCONFIG_TAG_SECTION_ENV_VARIABLE)

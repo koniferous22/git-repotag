@@ -11,8 +11,9 @@ RUN apk --update add git less openssh && \
 COPY . /git-repotag
 RUN chmod +x /git-repotag/bin/git-repotag
 ENV PATH="/git-repotag/bin:${PATH}"
+ENV PYTHONPATH="/git-repotag"
 ENV GITCONFIG_PATH="/root/.gitconfig"
 ENV GIT_REPOTAG_GITCONFIG_TAG_SECTION="tags1"
 
-WORKDIR /git-repotag/test
+WORKDIR /git-repotag/git_repotag/test
 CMD [ "python3", "test.py" ]
