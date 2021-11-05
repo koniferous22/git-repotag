@@ -8,7 +8,7 @@ from git_repotag.src.logger import set_logging_level
 
 set_logging_level(logging.CRITICAL)
 
-class TestStringMethods(unittest.TestCase):
+class GitRepotagTest(unittest.TestCase):
 
     gitconfig_path = os.environ.get('GITCONFIG_PATH')
     arg_parser = get_arg_parser()
