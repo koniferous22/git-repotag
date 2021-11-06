@@ -17,7 +17,7 @@ def is_git_repo(directory):
     return git_dir.exists()
 
 def get_arg_parser():
-    parser = ArgumentParser()
+    parser = ArgumentParser('git-repotag')
     verbosity_group = parser.add_mutually_exclusive_group()
     verbosity_group .add_argument('-v', action='store_const', dest='log_level', const=logging.INFO)
     verbosity_group .add_argument('-q', action='store_const', dest='log_level', const=logging.ERROR)
