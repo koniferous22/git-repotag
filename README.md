@@ -5,8 +5,7 @@ Util for tagging repos for further use cases
 ## How to test
 
 ```bash
-make test-build
-make test-run
+make test
 ```
 
 * Running tests requires docker
