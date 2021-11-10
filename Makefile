@@ -5,3 +5,6 @@ test-run:
 test-cleanup:
 	docker rmi git-repotag-test
 test: test-build test-run test-cleanup
+
+format:
+	black git_repotag/*

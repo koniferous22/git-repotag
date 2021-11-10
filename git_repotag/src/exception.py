@@ -4,9 +4,9 @@ class AppException(Exception):
             self.message = args[0]
         else:
             self.message = None
-    
+
     def __str__(self):
         if self.message:
             return self.message
         else:
-            return 'An error occured'
+            return "An error occured"

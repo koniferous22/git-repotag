@@ -1,6 +1,7 @@
 import logging
 from pathlib import PurePosixPath
 
+
 class LogFormatter(logging.Formatter):
 
     grey = "\x1b[38;21m"
@@ -15,7 +16,7 @@ class LogFormatter(logging.Formatter):
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.CRITICAL: bold_red + format + reset,
     }
 
     def format(self, record):
@@ -34,11 +35,14 @@ def init_logger():
     logger_.addHandler(ch_)
     return logger_, ch_
 
+
 logger, ch = init_logger()
+
 
 def set_logging_level(level):
     ch.setLevel(level)
     logger.setLevel(level)
+
 
 def get_logger():
     return logger

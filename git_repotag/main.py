@@ -5,6 +5,7 @@ import traceback
 import sys
 import logging
 
+
 def main():
     try:
         parser = get_arg_parser()
@@ -24,5 +25,6 @@ def main():
         traceback.print_exc(file=sys.stdout)
         exit(2)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
