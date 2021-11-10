@@ -2,7 +2,7 @@
 import unittest
 import os
 import logging
-from git_repotag.src.git_sdk import gitconfig_add, gitconfig_parse_repotags, run_command
+from git_repotag.src.git import gitconfig_add, gitconfig_parse_repotags, run_command
 from git_repotag.src.cli import cli, get_arg_parser
 from git_repotag.src.logger import set_logging_level
 

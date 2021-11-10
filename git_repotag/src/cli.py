@@ -1,26 +1,20 @@
 #!/usr/bin/python3
 from argparse import ArgumentParser
 from os import getcwd
-import logging
 from pathlib import Path
 from pprint import pprint
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
 
-from . import GIT_DIR, set_logging_level, get_logger, gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
-
-def path_exists(p):
-    return p.expanduser().exists()
-
-def is_git_repo(directory):
-    git_dir = directory / GIT_DIR
-    return git_dir.exists()
+from .git import gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
+from .logger import get_logger
+from .utils import validate_path
 
 def get_arg_parser():
     parser = ArgumentParser('git-repotag')
     verbosity_group = parser.add_mutually_exclusive_group()
-    verbosity_group .add_argument('-v', help='Verbose', action='store_const', dest='log_level', const=logging.INFO)
-    verbosity_group .add_argument('-q', help='Quiet', action='store_const', dest='log_level', const=logging.ERROR)
+    verbosity_group.add_argument('-v', '--verbose', action='store_true', help='verbose')
+    verbosity_group.add_argument('-q', '--quiet', action='store_true', help='quiet')
     subparsers = parser.add_subparsers(title='commands', dest='command', required=True)
     parser_add = subparsers.add_parser('add', help='Add tag to git repo')
     parser_add.add_argument('tag', help='Gitconfig tag')
@@ -40,16 +34,6 @@ def get_arg_parser():
     parser_cleanup = subparsers.add_parser('cleanup', help="Cleanup of invalid paths in gitconfig")
     parser_cleanup.add_argument('-y', help='Assume yes for prompts', dest='assume_yes', action='store_true')
     return parser
-
-def validate_path(path):
-    if not path_exists(path):
-        return f'Path "{path}" does not exist'
-    if not is_git_repo(path):
-        return f'Path "{path}" is not a git repo'
-
-def validate_tag(tag):
-    if not tag.isalpha():
-        return f'Tag "{tag}" contains invalid - non-alphabetic characters'
 
 def add(repotags ,tag, repo_path):
     get_logger().info('Running "add" command')
@@ -151,8 +135,6 @@ def get_path_from_args(args):
     return path.expanduser().resolve()
 
 def cli(args):
-    if args.log_level is not None:
-        set_logging_level(args.log_level)
     get_logger().info('Running in verbose mode')
     repotags = gitconfig_parse_repotags()
     cli_result = 0

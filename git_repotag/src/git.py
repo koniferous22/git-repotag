@@ -18,7 +18,6 @@ def run_command(command, *, should_redirect_to_stdout=False, check=False):
 def gitconfig_remove(repotags, tag, repo_path):
     repo_path_string=  str(repo_path)
     should_perform_cleanup = repo_path_string in repotags.get(tag, [])
-    # TODO analyze optional error throwing
     if should_perform_cleanup:
         run_command(
             f'git config --global --unset-all "{get_gitconfig_tag_section()}.{tag}" "{repo_path_string}"',
