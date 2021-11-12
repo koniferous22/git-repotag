@@ -6,7 +6,7 @@ from pprint import pprint
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
 
-from .git import gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
+from .git import get_extra_gitconfig_file, gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
 from .logger import get_logger
 from .utils import validate_path
 
@@ -49,22 +49,22 @@ def get_arg_parser():
     return parser
 
 
-def add(repotags, tag, repo_path):
+def add(repotags, tag, repo_path, *, extra_gitconfig=None):
     get_logger().info('Running "add" command')
     validation_err = validate_path(repo_path)
     if validation_err is not None:
         raise Exception(validation_err)
-    gitconfig_add(repotags, tag, repo_path)
+    gitconfig_add(repotags, tag, repo_path, extra_gitconfig)
 
 
-def remove(repotags, tag, repo_path):
+def remove(repotags, tag, repo_path, *, extra_gitconfig=None):
     validation_err = validate_path(repo_path)
     if validation_err is not None:
         raise Exception(validation_err)
-    gitconfig_remove(repotags, tag, repo_path)
+    gitconfig_remove(repotags, tag, repo_path, extra_gitconfig)
 
 
-def interactive(repotags, repo_path):
+def interactive(repotags, repo_path, *, extra_gitconfig=None):
     get_logger().info('Running "interactive" command')
     # Value has to be stringified, otherwise list lookup fails
     str_repo_path = str(repo_path)
@@ -112,10 +112,10 @@ def interactive(repotags, repo_path):
         get_logger().warning(f"No repository tags were added")
     for tag in repotags_to_remove:
         get_logger().info(f'Removing tag "{tag}"')
-        gitconfig_remove(repotags, tag, repo_path)
+        gitconfig_remove(repotags, tag, repo_path, extra_gitconfig)
     for tag in repotags_to_add:
         get_logger().info(f'Adding tag "{tag}"')
-        gitconfig_add(repotags, tag, repo_path)
+        gitconfig_add(repotags, tag, repo_path, extra_gitconfig)
 
 
 def get_repotags_by_repos(repotags):
@@ -158,7 +158,7 @@ def validate(repotags):
     return command_result
 
 
-def cleanup(repotags, assume_yes=False):
+def cleanup(repotags, *, assume_yes=False, extra_gitconfig=None):
     get_logger().info('Running "cleanup" command')
     repotags_by_repos = get_repotags_by_repos(repotags)
     for repo, tags in repotags_by_repos.items():
@@ -173,7 +173,7 @@ def cleanup(repotags, assume_yes=False):
             )
             if should_perform_cleanup:
                 for tag in tags:
-                    gitconfig_remove(repotags, tag, repo)
+                    gitconfig_remove(repotags, tag, repo, extra_gitconfig)
 
 
 def get_path_from_args(args):
@@ -183,7 +183,8 @@ def get_path_from_args(args):
 
 def cli(args):
     get_logger().info("Running in verbose mode")
-    repotags = gitconfig_parse_repotags()
+    extra_gitconfig = get_extra_gitconfig_file()
+    repotags = gitconfig_parse_repotags(extra_gitconfig=extra_gitconfig)
     cli_result = 0
     if args.command == "list":
         if args.list_subcommand == "tags":
@@ -196,18 +197,18 @@ def cli(args):
             )
     elif args.command == "add":
         path = get_path_from_args(args)
-        add(repotags, args.tag, path)
+        add(repotags, args.tag, path, extra_gitconfig=extra_gitconfig)
     elif args.command == "remove":
         path = get_path_from_args(args)
-        remove(repotags, args.tag, path)
+        remove(repotags, args.tag, path, extra_gitconfig=extra_gitconfig)
     elif args.command == "interactive":
         path = get_path_from_args(args)
-        interactive(repotags, path)
+        interactive(repotags, path, extra_gitconfig=extra_gitconfig)
     elif args.command == "validate":
         # Apply exit code from the result
         cli_result = validate(repotags)
     elif args.command == "cleanup":
-        cleanup(repotags, args.assume_yes)
+        cleanup(repotags, assume_yes=args.assume_yes, extra_gitconfig=extra_gitconfig)
     else:
         raise Exception(f'Unknown command "{args.command}"')
     return cli_result
