@@ -3,8 +3,14 @@ import os
 from subprocess import PIPE, run
 
 from .exception import AppException
-from .config import EXTRA_GITCONFIG_FILE_DEFAULT, EXTRA_GITCONFIG_FILE_ENV_VARIABLE, GITCONFIG_TAG_SECTION_DEFAULT, GITCONFIG_TAG_SECTION_ENV_VARIABLE
+from .config import (
+    EXTRA_GITCONFIG_FILE_DEFAULT,
+    EXTRA_GITCONFIG_FILE_ENV_VARIABLE,
+    GITCONFIG_TAG_SECTION_DEFAULT,
+    GITCONFIG_TAG_SECTION_ENV_VARIABLE,
+)
 from .logger import get_logger
+
 
 def run_command(command, *, should_redirect_to_stdout=False, check=False):
     get_logger().info(
@@ -17,25 +23,36 @@ def run_command(command, *, should_redirect_to_stdout=False, check=False):
     )
     return (completed_process.returncode, process_output)
 
-def parse_git_config_key_value(prefix, *, file_option=''):
-    get_logger().info(f'Parsing "{prefix}" from .gitconfig{f" (file option - {file_option})" if file_option else ""}')
+
+def parse_git_config_key_value(prefix, *, file_option=""):
+    get_logger().info(
+        f'Parsing "{prefix}" from .gitconfig{f" (file option - {file_option})" if file_option else ""}'
+    )
     _, command_output = run_command(f"git config {file_option} --list", check=True)
     tag_config_entries = [
-        line
-        for line in command_output.splitlines()
-        if line.startswith(prefix)
+        line for line in command_output.splitlines() if line.startswith(prefix)
     ]
     return [tuple(entry.split("=", 1)) for entry in tag_config_entries]
 
+
 def get_extra_gitconfig_file():
-    extra_gitconfig_file_location_env = os.environ.get(EXTRA_GITCONFIG_FILE_ENV_VARIABLE)
-    extra_gitconfig_file_location = extra_gitconfig_file_location_env if extra_gitconfig_file_location_env is not None else EXTRA_GITCONFIG_FILE_DEFAULT
-    extra_gitconfig_file_entries = parse_git_config_key_value(extra_gitconfig_file_location, file_option='--global')
+    extra_gitconfig_file_location_env = os.environ.get(
+        EXTRA_GITCONFIG_FILE_ENV_VARIABLE
+    )
+    extra_gitconfig_file_location = (
+        extra_gitconfig_file_location_env
+        if extra_gitconfig_file_location_env is not None
+        else EXTRA_GITCONFIG_FILE_DEFAULT
+    )
+    extra_gitconfig_file_entries = parse_git_config_key_value(
+        extra_gitconfig_file_location, file_option="--global"
+    )
     if not extra_gitconfig_file_entries:
         return
     if len(extra_gitconfig_file_entries) > 1:
-        raise AppException('Encountered more than gitconfig file for tags')
+        raise AppException("Encountered more than gitconfig file for tags")
     return extra_gitconfig_file_entries[0][1]
+
 
 def get_gitconfig_tag_section():
     gitconfig_tag_section_env = os.environ.get(GITCONFIG_TAG_SECTION_ENV_VARIABLE)
@@ -45,9 +62,11 @@ def get_gitconfig_tag_section():
         else GITCONFIG_TAG_SECTION_DEFAULT
     )
 
+
 def get_file_option_from_maybe_extra_gitconfig(extra_gitconfig=None):
     # NOTE: both single & double quotes don't work with --file option, therefore no escaping is performed
-    return '--global' if extra_gitconfig is None else f'--file {extra_gitconfig}'
+    return "--global" if extra_gitconfig is None else f"--file {extra_gitconfig}"
+
 
 def gitconfig_remove(repotags, tag, repo_path, extra_gitconfig=None):
     file_option = get_file_option_from_maybe_extra_gitconfig(extra_gitconfig)

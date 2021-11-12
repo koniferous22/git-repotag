@@ -6,7 +6,12 @@ from pprint import pprint
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
 
-from .git import get_extra_gitconfig_file, gitconfig_parse_repotags, gitconfig_add, gitconfig_remove
+from .git import (
+    get_extra_gitconfig_file,
+    gitconfig_parse_repotags,
+    gitconfig_add,
+    gitconfig_remove,
+)
 from .logger import get_logger
 from .utils import validate_path
 
