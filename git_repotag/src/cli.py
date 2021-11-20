@@ -183,7 +183,7 @@ def cleanup(repotags, *, assume_yes=False, extra_gitconfig=None):
 
 def get_path_from_args(args):
     path = Path(args.path if args.path is not None else getcwd())
-    return path.expanduser().resolve()
+    return path.expanduser().absolute()
 
 
 def cli(args):

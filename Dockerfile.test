@@ -8,7 +8,8 @@ RUN apk --update add git less openssh && \
     pip install inquirerpy
 
 COPY . /git-repotag
-RUN chmod +x /git-repotag/bin/git-repotag
+RUN chmod +x /git-repotag/bin/git-repotag && \
+    touch /root/.gitconfig
 ENV PATH="/git-repotag/bin:${PATH}"
 ENV PYTHONPATH="/git-repotag"
 ENV GITCONFIG_PATH="/root/.gitconfig"
